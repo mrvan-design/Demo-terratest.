@@ -20,34 +20,27 @@ jobs:
         env:
           SERVICES: ec2,iam,vpc
           AWS_DEFAULT_REGION: us-east-1
-        options: >-
-          --health-cmd="curl -s http://localhost:4566/health || exit 1"
-          --health-interval=3s
-          --health-timeout=2s
-          --health-retries=15
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    # Terraform phiên bản ổn định nhất
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
-        terraform_version: "1.3.7"
+        terraform_version: 1.5.7
 
-    # Đợi LocalStack (siêu nhanh)
-    - name: Wait LocalStack Ready
+    # Quan trọng — xoá khóa plugin version cũ
+    - name: Remove Terraform lock file
+      run: rm -f terraform/.terraform.lock.hcl
+
+    - name: Wait for LocalStack
       run: |
         echo "Waiting for LocalStack..."
-        for i in {1..10}; do
-          nc -z localhost 4566 && echo "LocalStack up!" && break
-          echo "Not ready, retry in 3s..."
-          sleep 3
+        for i in {1..30}; do
+          curl -s http://localhost:4566/_localstack/health | grep -q '"ec2":"running"' && break
+          sleep 2
         done
-
-    - name: Terraform Format
-      run: terraform -chdir=terraform fmt -recursive
 
     - name: Terraform Init
       run: terraform -chdir=terraform init
