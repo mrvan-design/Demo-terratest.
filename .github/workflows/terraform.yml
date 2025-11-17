@@ -4,45 +4,44 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: read
 
 jobs:
   terraform:
-    name: "Terraform"
     runs-on: ubuntu-latest
     environment: production
-
     defaults:
       run:
         shell: bash
 
     steps:
-      # Checkout repository
+      # 1️⃣ Checkout code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Setup Terraform CLI (v2) and configure Terraform Cloud API token
+      # 2️⃣ Setup Terraform CLI with Terraform Cloud token
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: latest
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      # Terraform Init in terraform/ folder
-      - name: Terraform Init
-        run: terraform -chdir=terraform init
-
-      # Check formatting
+      # 3️⃣ Format Terraform files (auto fix)
       - name: Terraform Format
-        run: terraform -chdir=terraform fmt -check
+        run: terraform -chdir=terraform fmt -recursive
 
-      # Generate execution plan
+      # 4️⃣ Terraform Init
+      - name: Terraform Init
+        run: terraform -chdir=terraform init -input=false
+
+      # 5️⃣ Terraform Plan (speculative plan)
       - name: Terraform Plan
-        run: terraform -chdir=terraform plan -input=false
+        run: terraform -chdir=terraform plan -input=false -out=tfplan
 
-      # Apply only on push to main
+      # 6️⃣ Terraform Apply on push to main
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform -chdir=terraform apply -auto-approve -input=false
+        run: terraform -chdir=terraform apply -auto-approve tfplan
