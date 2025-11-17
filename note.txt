@@ -156,3 +156,22 @@ Changes to Outputs:
   + subnet_id   = (known after apply)
   + vpc_id      = (known after apply)
 ─────────────────────────────────
+  # demo chỉ nên chạy bản thấp với máy mac ( máy chạy test air m1 )
+
+services:
+      localstack:
+        image: localstack/localstack:0.14.1 ##
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: ec2,iam,vpc
+          AWS_DEFAULT_REGION: us-east-1
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.7 ###
